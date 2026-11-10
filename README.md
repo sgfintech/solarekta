@@ -183,6 +183,7 @@ npm run build
 - [Data model](docs/DATA_MODEL.md)
 - [Implementation backlog](docs/IMPLEMENTATION_BACKLOG.md)
 - [Decisions and open questions](docs/DECISIONS.md)
+- [Deployment (Railway / Docker)](docs/DEPLOYMENT.md)
 
 ## Non-goals for this MVP
 

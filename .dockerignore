@@ -1,0 +1,12 @@
+node_modules
+.next
+var
+.git
+.env
+.env.*
+!.env.example
+_backup_pre_redesign
+coverage
+*.log
+*.tsbuildinfo
+tests
