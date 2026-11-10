@@ -14,10 +14,12 @@ function resolveDbPath() {
 function createDb() {
   const dbPath = resolveDbPath();
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  const database = new Database(dbPath);
+  // Wait for locks from other processes on the same file (instead of failing with
+  // SQLITE_BUSY). Set before anything else, including the journal-mode switch.
+  const database = new Database(dbPath, { timeout: 10_000 });
+  database.pragma("busy_timeout = 10000");
   database.pragma("journal_mode = WAL");
   database.pragma("foreign_keys = ON");
-  database.pragma("busy_timeout = 5000");
 
   const hasSchema = database
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'users'")
@@ -31,8 +33,24 @@ function createDb() {
   return database;
 }
 
-export const db = globalForDb.__solarektaDb ?? createDb();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__solarektaDb = db;
+/** Opens the database on first use (not at import), and reuses it afterwards. */
+export function getDb(): Database.Database {
+  if (!globalForDb.__solarektaDb) globalForDb.__solarektaDb = createDb();
+  return globalForDb.__solarektaDb;
 }
+
+/**
+ * The shared connection. It is opened lazily so that importing a module never touches the
+ * database: `next build` loads every route in parallel workers while collecting page data,
+ * and opening (and migrating) the file there caused SQLITE_BUSY build failures.
+ */
+export const db: Database.Database = new Proxy({} as Database.Database, {
+  get(_target, property) {
+    const real = getDb();
+    const value = Reflect.get(real, property, real);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+  set(_target, property, value) {
+    return Reflect.set(getDb(), property, value);
+  },
+});

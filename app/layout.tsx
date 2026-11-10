@@ -2,6 +2,10 @@ import { FocusOnAlert } from "@/components/focus-on-alert";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+// Every page reads per-request data (session, database), so never prerender at build time.
+// This also keeps `next build` from opening the database.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
   title: {
