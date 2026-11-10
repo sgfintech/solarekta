@@ -3,12 +3,15 @@
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
-# Build tools are only a fallback in case better-sqlite3 has no prebuilt binary.
+# Build tools for compiling better-sqlite3 (a native module).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ \
  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci
+# better-sqlite3 compiles from source: use the Node headers bundled in this image instead of
+# downloading them from nodejs.org, which can stall a build for many minutes.
+ENV npm_config_nodedir=/usr/local
+RUN npm ci --no-audit --no-fund
 # Fail the build early if the native SQLite module did not compile.
 RUN node -e "require('better-sqlite3')(':memory:').close()"
 COPY . .
