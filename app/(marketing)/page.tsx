@@ -61,8 +61,20 @@ const faqs = [
   },
 ];
 
+/** Featured products are a nice-to-have: if the catalogue can't be read, the home page still renders. */
+function featuredProducts() {
+  try {
+    return listCatalogue()
+      .filter((p) => p.category === "panel" || p.category === "inverter" || p.category === "battery")
+      .slice(0, 3);
+  } catch (error) {
+    console.error("[home] Could not load featured equipment; rendering without it.", error);
+    return [];
+  }
+}
+
 export default function HomePage() {
-  const featured = listCatalogue().filter((p) => p.category === "panel" || p.category === "inverter" || p.category === "battery").slice(0, 3);
+  const featured = featuredProducts();
   return (
     <>
       {/* Hero */}
